@@ -16,5 +16,13 @@ Python Package for Easy Scraping and Handling of HCP Data
 
 Features
 --------
+* Set up AWS Credentials to access the HCP bucket
+* Get Structural Data for a list of subjects
+* Get resting-state DAta for a list of subjects
 
-* TODO
+Upcoming Features
+-----------------
+* Return a list of all/random subset of HCP subjects
+* Display the directory structure and help
+* Loads more data-scraping functionality
+* BIDSifying scraped data
