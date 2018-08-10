@@ -25,7 +25,9 @@ def setup_credentials():
     [hcp]
     AWS_ACCESS_KEY_ID=XXXXXXXXXXXXXXXX
     AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXX
-    The keys are credentials that you can get from HCP (see https://wiki.humanconnectome.org/display/PublicData/How+To+Connect+to+Connectome+Data+via+AWS)  # noqa
+    The keys are credentials that you can get from HCP 
+    (see https://wiki.humanconnectome.org/display/PublicData/How+To+Connect+to+Connectome+Data+via+AWS)  
+    # noqa
     """
     access_key = input('Enter your HCP ACCESS KEY ID')
     secret_access_key = input('Enter your HCP SECRET ACCESS KEY')
@@ -98,7 +100,11 @@ def get_structural_data(subject_list, scan_type, preprocessed=True, MNISpace=Tru
                {}{}/".format(subject, scan, output_dir, subject), shell=True)
 
     
-def get_rest_data(subject_list: list, scan_run: Tuple(["rfMRI_REST1_LR", "rfMRI_REST2_LR", "rfMRI_REST1_RL", "rfMRI_REST2_RL"]), preprocessed: bool=True, MNISpace: bool=True, out_dir: str='.'):
+def get_rest_data(subject_list: list, 
+                  scan_run: Tuple(["rfMRI_REST1_LR", "rfMRI_REST2_LR", "rfMRI_REST1_RL", "rfMRI_REST2_RL"]), 
+                  preprocessed: bool=True, 
+                  MNISpace: bool=True, 
+                  out_dir: str='.'):
     """
     Gets data of a specific type of modality for a list of subjects, and stores
     them in BIDS-like format in the specified output directory
@@ -129,7 +135,10 @@ def get_rest_data(subject_list: list, scan_run: Tuple(["rfMRI_REST1_LR", "rfMRI_
 
                 
 
-def train_test_split(root: str, split_folds: tuple([.7,.2,.1]), scan_type: list, convert_to_npy: bool=False) -> None:
+def train_test_split(root: str, 
+                     split_folds: tuple([.7,.2,.1]), 
+                     scan_type: list, 
+                     convert_to_npy: bool=False) -> None:
     """
     splits an hcp dataset into train, test, val and converts the .nii.gz 
     files to .npy for easier processing checks shape to ensure t1 and t2 
@@ -164,9 +173,6 @@ def train_test_split(root: str, split_folds: tuple([.7,.2,.1]), scan_type: list,
                     t2_np = t2_np[2:-2,27:-28,40:-45]
                     for i in range(t1_np.shape[2]):
                         assert(t1_np.shape == t2_np.shape)
-#                         nib.save(root+'/'+name, root+'/'+split+'/'+subject+name'_{}_t1.np'.format(i), t1_np[np.newaxis,:,:,i])
-#                         nib.save('/home/ubuntu/shreyaspadhy/hcp_np/'.format(split) + subject + '_{}_t2.npy'.format(i), t2_np[np.newaxis,:,:,i])
-
 
 
 # def fetch_hcp_diffusion(subjects):
@@ -187,7 +193,8 @@ def train_test_split(root: str, split_folds: tuple([.7,.2,.1]), scan_type: list,
 #     [hcp]
 #     AWS_ACCESS_KEY_ID=XXXXXXXXXXXXXXXX
 #     AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXX
-#     The keys are credentials that you can get from HCP (see https://wiki.humanconnectome.org/display/PublicData/How+To+Connect+to+Connectome+Data+via+AWS)  # noqa
+#     The keys are credentials that you can get from HCP 
+#      (see https://wiki.humanconnectome.org/display/PublicData/How+To+Connect+to+Connectome+Data+via+AWS)  # noqa
 #     Local filenames are changed to match our expected conventions.
 #     .. [1] Gorgolewski et al. (2016). The brain imaging data structure,
 #            a format for organizing and describing outputs of neuroimaging
@@ -230,7 +237,10 @@ def train_test_split(root: str, split_folds: tuple([.7,.2,.1]), scan_type: list,
 #     dataset_description = {
 #          "BIDSVersion": "1.0.0",
 #          "Name": "HCP",
-#          "Acknowledgements": """Data were provided by the Human Connectome Project, WU-Minn Consortium (Principal Investigators: David Van Essen and Kamil Ugurbil; 1U54MH091657) funded by the 16 NIH Institutes and Centers that support the NIH Blueprint for Neuroscience Research; and by the McDonnell Center for Systems Neuroscience at Washington University.""",  # noqa
+#          "Acknowledgements": """Data were provided by the Human Connectome Project, 
+#          WU-Minn Consortium (Principal Investigators: David Van Essen and Kamil Ugurbil; 1U54MH091657) 
+#        funded by the 16 NIH Institutes and Centers that support the NIH Blueprint for Neuroscience Research; 
+#        and by the McDonnell Center for Systems Neuroscience at Washington University.""",  # noqa
 #          "Subjects": subjects}
 
 #     with open(op.join(base_dir, 'dataset_description.json'), 'w') as outfile:
