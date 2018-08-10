@@ -2,7 +2,7 @@ import boto
 import os
 import json
 import subprocess
-
+import sklearn as sk
 
 class User():
     def __init__(self, access_key, secret_key):
@@ -30,6 +30,7 @@ def setup_credentials(access_key, secret_access_key, cred_file):
     AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXX
     The keys are credentials that you can get from HCP (see https://wiki.humanconnectome.org/display/PublicData/How+To+Connect+to+Connectome+Data+via+AWS)  # noqa
     """
+    
 
 
 def explain_HCP():
@@ -91,6 +92,47 @@ def get_structural_data(subject_list, scan_type, preprocessed=True, MNISpace=Tru
                 subprocess.check_output("aws s3 cp \
                s3://hcp-openaccess-temp/HCP_1200/{}/MNINonLinear/{}_restore_brain.nii.gz \
                {}{}/".format(subject, scan, output_dir, subject), shell=True)
+
+                
+
+def train_test_split(root: str, split_folds: tuple([.7,.2,.1]), scan_type: list, convert_to_npy: bool=False) -> None:
+    """
+    splits an hcp dataset into train, test, val and converts the .nii.gz 
+    files to .npy for easier processing checks shape to ensure t1 and t2 
+    are same dim
+    Parameters
+    ----------
+    root : str
+        root directory where raw files are stored
+    split_folds : tuple(float, float, float)
+    Notes  
+    -----
+    """
+    os.chdir(root)
+    subject_list = glob.glob('*')
+    shuffled_list = sk.utils.shuffle(subject_list, random_state=42)
+    n_subjects = len(shuffled_list)
+    train_list = subject_list[0:np.floor(n_subjects)*split_folds[0]]
+    train_list = subject_list[np.floor(n_subjects)*split_folds[0]:np.floor(n_subjects)*split_folds[1]]
+    train_list = subject_list[np.floor(n_subjects)*split_folds[1]:np.floor(n_subjects)*split_folds[2]]
+    data_splits = [train_list, test_list, val_list]
+    split_names = ['train', 'test', 'val']
+    for num, split in enumerate(split_names):
+        train_list = data_splits[num]
+        for subject in train_list:
+            for type in scan_type:
+                name = '/{}_restore_brain.nii.gz'.format(type)
+                os.rename(root+'/'+name, root+'/'+split+'/'+subject+name)
+                if convert_to_npy:
+                    t1_np = np.array(nib.load(root + subject + '/' + t1_name).dataobj)
+                    t2_np = np.array(nib.load(root + subject + '/' + t2_name).dataobj)
+                    t1_np = t1_np[2:-2,27:-28,40:-45]
+                    t2_np = t2_np[2:-2,27:-28,40:-45]
+                    for i in range(t1_np.shape[2]):
+                        assert(t1_np.shape == t2_np.shape)
+#                         nib.save(root+'/'+name, root+'/'+split+'/'+subject+name'_{}_t1.np'.format(i), t1_np[np.newaxis,:,:,i])
+#                         nib.save('/home/ubuntu/shreyaspadhy/hcp_np/'.format(split) + subject + '_{}_t2.npy'.format(i), t2_np[np.newaxis,:,:,i])
+
 
 
 # def fetch_hcp_diffusion(subjects):
