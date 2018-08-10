@@ -7,6 +7,7 @@ import json
 import subprocess
 import sklearn as sk
 import numpy as np
+from typing import Tuple
 
 
 def setup_credentials():
@@ -28,16 +29,23 @@ def setup_credentials():
     The keys are credentials that you can get from HCP
     (see https://wiki.humanconnectome.org/display/PublicData/How+To+Connect+to+Connectome+Data+via+AWS)
     """
-    access_key = input('Enter your HCP ACCESS KEY ID')
-    secret_access_key = input('Enter your HCP SECRET ACCESS KEY')
+    access_key = input('Enter your HCP ACCESS KEY ID : ')
+    secret_access_key = input('Enter your HCP SECRET ACCESS KEY : ')
 
-    cred_file = open('~/.aws/credentials', "w+")
+    if not os.path.isdir(os.path.expanduser('~') + '/.aws'):
+        print("test")
+        os.makedirs(os.path.expanduser('~') + '/.aws')
+
+    cred_file = open(os.path.expanduser('~') + '/.aws/credentials', "w+")
     if '[hcp]' in cred_file.read():
-        print("You have 'hcp' credentials set up already!")
+        update = input(
+            "You have 'hcp' credentials set up already! Do you wish to update? [y/n] \n")
+        if update == 'y:
+            pass
     else:
-        line1 = '[hcp]'
-        line2 = 'aws_access_key_id = ' + access_key
-        line3 = 'aws_secret_access_key = ' + aws_secret_access_key
+        line1 = '[hcp]' + '\n'
+        line2 = 'aws_access_key_id = ' + access_key + '\n'
+        line3 = 'aws_secret_access_key = ' + secret_access_key + '\n'
         cred_file.writelines([line1, line2, line3])
 
 
@@ -104,7 +112,7 @@ def get_structural_data(subject_list, scan_type, preprocessed=True, MNISpace=Tru
 
 
 def get_rest_data(subject_list: list,
-                  scan_run: Tuple(["rfMRI_REST1_LR", "rfMRI_REST2_LR", "rfMRI_REST1_RL", "rfMRI_REST2_RL"]),
+                  scan_run: tuple(["rfMRI_REST1_LR", "rfMRI_REST2_LR", "rfMRI_REST1_RL", "rfMRI_REST2_RL"]),
                   preprocessed: bool=True,
                   MNISpace: bool=True,
                   out_dir: str='.'):
@@ -133,8 +141,7 @@ def get_rest_data(subject_list: list,
 
             for scan in scan_run:
                 subprocess.check_output("aws s3 cp \
-               s3: //hcp-openaccess-temp/HCP_1200/{}/MNINonLinear/Results/{}/{}_Atlas_MSMAll.dtseries.nii
-               {}{} /".format(subject, scan, scan, output_dir, subject), shell=True)
+               s3: //hcp-openaccess-temp/HCP_1200/{}/MNINonLinear/Results/{}/{}_Atlas_MSMAll.dtseries.nii{}{} /".format(subject, scan, scan, output_dir, subject), shell=True)
 
 
 def train_test_split(root: str,
