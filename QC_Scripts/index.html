@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+    <head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	
+	<!-- iOS meta tags -->
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	
+	<link rel="stylesheet" type="text/css" href="papaya.css?build=1434" />
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+	<script type="text/javascript" src="papaya.js?build=1434"></script>
+	
+	<title>Papaya Viewer</title>
+	
+	<script type="text/javascript">
+	 var params = [];
+	 var qc = [];
+	 var qcval = 0;
+	 var flagval = 0;
+	 
+	 var i = 0;
+	 var l = 0;
+	 params["fullScreenPadding"] = false;
+	 
+	 document.addEventListener('keydown', function(event) {
+	     if (event.keyCode == 83) {
+		 resetViewer();
+	     } else if (event.keyCode == 32) {
+		 qc[i] = [papayaContainers[0].viewer.screenVolumes[0].volume.fileName,0,0];
+		 i = Math.max(0,i-1);
+		 resetViewer();
+	     } else if (event.keyCode == 37) {
+		 qc[i] = [papayaContainers[0].viewer.screenVolumes[0].volume.fileName,0,0];
+		 i = Math.min(l,i+1);
+		 resetViewer();
+	     } else if (event.keyCode == 39) {
+		 qc[i] = [papayaContainers[0].viewer.screenVolumes[0].volume.fileName,1,0];
+		 i = Math.min(l,i+1);
+		 resetViewer();
+	     } else if (event.keyCode == 70) {
+		 qc[i] = [papayaContainers[0].viewer.screenVolumes[0].volume.fileName,0,1];
+		 i = Math.min(l,i+1);
+		 resetViewer();
+	     }
+	 });
+
+	 function resetViewer() {
+	     fetch("images.json")
+		 .then(response => response.json())
+		 .then((data) => {
+		     params["smoothDisplay"] = false;
+		     params["images"] = data[i];
+		     l = data.length;
+		     func = data[i][1].substring(data[i][1].lastIndexOf("/")+1);
+		     console.log(func);
+		     document.getElementById("subject").innerHTML = data[i][0];
+		     params[func] = {"minPercent": 0.1, "maxPercent":1,"lut": "Red Overlay","alpha":0.5,"interpolation":false};
+		     papaya.Container.resetViewer(0,params);
+		 }); 
+	 }
+	 
+	 function SaveCSV() {
+	     let csvContent = "data:text/csv;charset=utf-8,";
+	     csvContent += "BaseImage,RegOK,Flag\n";
+	     qc.forEach(function(rowArray) {
+		 let row = rowArray.join(",");
+		 csvContent += row + "\n";
+	     });
+	     var encodedUri = encodeURI(csvContent);
+	     var link = document.createElement("a");
+	     link.setAttribute("href", encodedUri);
+	     link.setAttribute("download", "qc_file.csv");
+	     document.body.appendChild(link); // Required for FF
+	     
+	     link.click(); // This will download the data file named "my_data.csv".
+	 }
+	</script>
+	
+    </head>
+    
+    <body style="background:#000000">
+	<input id="SaveCSV" type="button" value="Save QC CSV" onclick="SaveCSV();" />
+	<div id="instructions" style="color:#FFFFFF">
+	    Press s to start rating images<br>
+	    Press left arrow key for bad coregistration<br>
+	    Press right arrow key for good coregistration<br>
+	    Press space bar to return to the previous image to re-rate<br>
+	    Press f to flag the image for extra review<br>
+	</div>
+	<div id="subject" style="color:#00FFFF">subject id</div>
+	
+	<div class="papaya" data-params="params"></div>
+	
+    </body>
+</html>
