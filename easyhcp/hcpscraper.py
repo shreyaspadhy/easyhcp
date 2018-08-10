@@ -11,7 +11,7 @@ class User():
         self.secret_key = secret_key
 
 
-def setup_credentials(access_key, secret_access_key, cred_file):
+def setup_credentials():
     """
     Set Up AWS credentials from either access keys, or a credentials file
     Parameters
@@ -34,11 +34,12 @@ def setup_credentials(access_key, secret_access_key, cred_file):
     access_key = input('Enter your HCP ACCESS KEY ID')
     secret_access_key = input('Enter your HCP SECRET ACCESS KEY')
     if not os.path.isfile('~/.aws/credentials'):
+        cred_file = '~/.aws/credentials'
         line1 = '[default]'
         line2 = 'aws_access_key_id ' + access_key
         line3 = 'aws_secret_access_key ' + aws_secret_access_key
         target.writelines([line1, line2, line3]) 
-
+        
 def explain_HCP():
     """
     Lists all the files in a folder for a subject and explains what they are.
