@@ -10,7 +10,7 @@ class User():
         self.secret_key = secret_key
 
 
-def setup_credentials(access_key, secret_access_key, cred_file):
+def setup_credentials():
     """
     Set Up AWS credentials from either access keys, or a credentials file
     Parameters
@@ -30,8 +30,15 @@ def setup_credentials(access_key, secret_access_key, cred_file):
     AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXX
     The keys are credentials that you can get from HCP (see https://wiki.humanconnectome.org/display/PublicData/How+To+Connect+to+Connectome+Data+via+AWS)  # noqa
     """
-    
-
+    access_key = input('Enter your HCP ACCESS KEY ID')
+    secret_access_key = input('Enter your HCP SECRET ACCESS KEY')
+    if not os.path.isfile('~/.aws/credentials'):
+        cred_file = '~/.aws/credentials'
+        line1 = '[default]'
+        line2 = 'aws_access_key_id ' + access_key
+        line3 = 'aws_secret_access_key ' + aws_secret_access_key
+        target.writelines([line1, line2, line3]) 
+        
 
 def explain_HCP():
     """
@@ -94,7 +101,7 @@ def get_structural_data(subject_list, scan_type, preprocessed=True, MNISpace=Tru
                {}{}/".format(subject, scan, output_dir, subject), shell=True)
 
     
-def get_rest_data(subject_list, scan_run = ["rfMRI_REST1_LR", "rfMRI_REST2_LR", "rfMRI_REST1_RL", "rfMRI_REST2_RL"], preprocessed=True, MNISpace=True, out_dir='.'):
+def get_rest_data(subject_list: list, scan_run: Tuple(["rfMRI_REST1_LR", "rfMRI_REST2_LR", "rfMRI_REST1_RL", "rfMRI_REST2_RL"]), preprocessed: bool=True, MNISpace: bool=True, out_dir: str='.'):
     """
     Gets data of a specific type of modality for a list of subjects, and stores
     them in BIDS-like format in the specified output directory
