@@ -4,6 +4,7 @@ import json
 import subprocess
 import sklearn as sk
 
+
 class User():
     def __init__(self, access_key, secret_key):
         self.access_key = access_key
@@ -30,8 +31,13 @@ def setup_credentials(access_key, secret_access_key, cred_file):
     AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXX
     The keys are credentials that you can get from HCP (see https://wiki.humanconnectome.org/display/PublicData/How+To+Connect+to+Connectome+Data+via+AWS)  # noqa
     """
-    
-
+    access_key = input('Enter your HCP ACCESS KEY ID')
+    secret_access_key = input('Enter your HCP SECRET ACCESS KEY')
+    if not os.path.isfile('~/.aws/credentials'):
+        line1 = '[default]'
+        line2 = 'aws_access_key_id ' + access_key
+        line3 = 'aws_secret_access_key ' + aws_secret_access_key
+        target.writelines([line1, line2, line3]) 
 
 def explain_HCP():
     """
