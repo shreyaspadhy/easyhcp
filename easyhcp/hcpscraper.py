@@ -4,7 +4,6 @@ import json
 import subprocess
 import sklearn as sk
 
-
 class User():
     def __init__(self, access_key, secret_key):
         self.access_key = access_key
@@ -40,6 +39,7 @@ def setup_credentials():
         line3 = 'aws_secret_access_key ' + aws_secret_access_key
         target.writelines([line1, line2, line3]) 
         
+
 def explain_HCP():
     """
     Lists all the files in a folder for a subject and explains what they are.
@@ -99,6 +99,36 @@ def get_structural_data(subject_list, scan_type, preprocessed=True, MNISpace=Tru
                 subprocess.check_output("aws s3 cp \
                s3://hcp-openaccess-temp/HCP_1200/{}/MNINonLinear/{}_restore_brain.nii.gz \
                {}{}/".format(subject, scan, output_dir, subject), shell=True)
+
+    
+def get_rest_data(subject_list: list, scan_run: Tuple(["rfMRI_REST1_LR", "rfMRI_REST2_LR", "rfMRI_REST1_RL", "rfMRI_REST2_RL"]), preprocessed: bool=True, MNISpace: bool=True, out_dir: str='.'):
+    """
+    Gets data of a specific type of modality for a list of subjects, and stores
+    them in BIDS-like format in the specified output directory
+    Parameters
+    ----------
+    subject_list : list
+        List of subjects to get data for
+    processed : bool
+        Gets processed data in MNI Space
+    type : list
+        A list of identifiers for the type of data to scrape
+    out_dir : str
+        Path to output directory
+    Notes
+    -----
+    """
+    if preprocessed and MNISpace:
+        output_dir = "{}/hcp/".format(out_dir)
+
+        for subject in subject_list:
+            subprocess.check_output(
+                "mkdir -p {}{}/".format(output_dir, subject), shell=True)
+
+            for scan in scan_run:
+                subprocess.check_output("aws s3 cp \
+               s3://hcp-openaccess-temp/HCP_1200/{}/MNINonLinear/Results/{}/{}_Atlas_MSMAll.dtseries.nii \
+               {}{}/".format(subject, scan, scan, output_dir, subject), shell=True)
 
                 
 
