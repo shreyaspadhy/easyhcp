@@ -18,7 +18,7 @@ Features
 --------
 * Set up AWS Credentials to access the HCP bucket
 * Get Structural Data for a list of subjects
-* Get resting-state DAta for a list of subjects
+* Get Resting-State Data for a list of subjects
 
 Upcoming Features
 -----------------
