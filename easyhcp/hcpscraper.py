@@ -6,6 +6,7 @@ import os
 import json
 import subprocess
 import sklearn as sk
+import numpy as np
 
 def setup_credentials():
     """
