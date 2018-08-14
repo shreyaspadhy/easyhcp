@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import boto3
+import botocore
 import os
+import os.path as op
 import json
 import subprocess
 import sklearn as sk
@@ -40,7 +42,7 @@ def setup_credentials():
     if '[hcp]' in cred_file.read():
         update = input(
             "You have 'hcp' credentials set up already! Do you wish to update? [y/n] \n")
-        if update == 'y:
+        if update == 'y':
             pass
     else:
         line1 = '[hcp]' + '\n'
@@ -81,67 +83,142 @@ def get_subjects(get_all=True, get_random=1):
     pass
 
 
-def get_structural_data(subject_list, scan_type, preprocessed=True, MNISpace=True, out_dir='.'):
+def get_structural_data(subject_list, scan_type, preprocessed=True,
+                        MNISpace=True, out_dir='.'):
     """
-    Gets data of a specific type of modality for a list of subjects, and stores
+    Gets structural data for a list of subjects, and stores
     them in BIDS-like format in the specified output directory
     Parameters
     ----------
     subject_list : list
         List of subjects to get data for
-    processed : bool
-        Gets processed data in MNI Space
-    type : list
-        A list of identifiers for the type of data to scrape
+    scan_type: list
+        List of types of structural scans to get
+    preprocessed : bool
+        Gets preprocessed data
+    MNISpace : bool
+        Gets data registered in MNI Space
     out_dir : str
         Path to output directory
     Notes
     -----
+    Local filenames are changed to match our expected conventions.
+    .. [1] Gorgolewski et al. (2016). The brain imaging data structure, a
+    format for organizing and describing outputs of neuroimaging experiments.
+    Scientific Data, 3:: 160044. DOI: 10.1038/sdata.2016.44.
     """
+    s3 = boto3.resource('s3')
+    boto3.setup_default_session(profile_name='hcp')
+    bucket = s3.Bucket('hcp-openaccess-temp')
+
+    root_dir = op.join(out_dir, 'hcp')
+    os.makedirs(root_dir, exist_ok=True)
+
     if preprocessed and MNISpace:
-        output_dir = "{}/hcp/".format(out_dir)
 
         for subject in subject_list:
-            subprocess.check_output(
-                "mkdir -p {}{}/".format(output_dir, subject), shell=True)
+            subj_anat = op.join(root_dir, 'sub-{}'.format(subject), 'anat')
+            os.makedirs(subj_anat, exist_ok=True)
+
+            # subprocess.check_output(
+            #     "mkdir -p {}{}/".format(output_dir, subject), shell=True)
+
+            src_folder = op.join('HCP_1200', subject, 'MNINonLinear')
 
             for scan in scan_type:
-                subprocess.check_output("aws s3 cp \
-               s3://hcp-openaccess-temp/HCP_1200/{}/MNINonLinear/{}_restore_brain.nii.gz \
-               {}{}/".format(subject, scan, output_dir, subject), shell=True)
+                src_file = op.join(src_folder,
+                                   '{}_restore_brain.nii.gz'.format(scan))
+                dst_file = op.join(subj_anat,
+                                   'sub-{}_{}.nii.gz'.format(subject, scan))
+                try:
+                    bucket.download_file(src_file, dst_file)
+                except botocore.exceptions.ClientError as e:
+                    if e.response['Error']['Code'] == "404":
+                        print("{} does not exist.".format(src_file))
+                    else:
+                        raise
+
+    dataset_description = {
+        "BIDSVersion": "1.0.0",
+        "Name": "HCP",
+        "Acknowledgements": """Data were provided by the Human Connectome Project, 
+        WU-Minn Consortium (Principal Investigators: David Van Essen and Kamil
+        Ugurbil; 1U54MH091657) funded by the 16 NIH Institutes and Centers that
+        support the NIH Blueprint for Neuroscience Research; and by the McDonnell
+        Center for Systems Neuroscience at Washington University.""",
+        "Subjects": subject_list}
+
+    with open(op.join(root_dir, 'dataset_description.json'), 'w') as outfile:
+        json.dump(dataset_description, outfile)
 
 
-def get_rest_data(subject_list: list,
-                  scan_run: tuple(["rfMRI_REST1_LR", "rfMRI_REST2_LR", "rfMRI_REST1_RL", "rfMRI_REST2_RL"]),
-                  preprocessed: bool=True,
-                  MNISpace: bool=True,
-                  out_dir: str='.'):
+def get_resting_data(subject_list,
+                     scan_run=["rfMRI_REST1_LR", "rfMRI_REST2_LR",
+                               "rfMRI_REST1_RL", "rfMRI_REST2_RL"],
+                     preprocessed=True,
+                     MNISpace=True, out_dir='.'):
     """
-    Gets resting state fMRI data for different runs for a list of subjects,
-     and stores them in the specified output directory
+    Gets resting data for runs for a list of subjects, and stores
+    them in BIDS-like format in the specified output directory
     Parameters
     ----------
     subject_list : list
         List of subjects to get data for
-    processed : bool
-        Gets processed data in MNI Space
-    type : list
-        A list of identifiers for the type of data to scrape
+    scan_run: list
+        List of types of structural scans to get
+    preprocessed : bool
+        Gets preprocessed data
+    MNISpace : bool
+        Gets data registered in MNI Space
     out_dir : str
         Path to output directory
     Notes
     -----
+    Local filenames are changed to match our expected conventions.
+    .. [1] Gorgolewski et al. (2016). The brain imaging data structure, a
+    format for organizing and describing outputs of neuroimaging experiments.
+    Scientific Data, 3:: 160044. DOI: 10.1038/sdata.2016.44.
     """
+    s3 = boto3.resource('s3')
+    boto3.setup_default_session(profile_name='hcp')
+    bucket = s3.Bucket('hcp-openaccess-temp')
+
+    root_dir = op.join(out_dir, 'hcp')
+    os.makedirs(root_dir, exist_ok=True)
+
     if preprocessed and MNISpace:
-        output_dir = "{}/hcp/".format(out_dir)
 
         for subject in subject_list:
-            subprocess.check_output(
-                "mkdir -p {}{}/".format(output_dir, subject), shell=True)
+            subj_func = op.join(root_dir, 'sub-{}'.format(subject), 'func')
+            os.makedirs(subj_func, exist_ok=True)
+
+            # subprocess.check_output(
+            #     "mkdir -p {}{}/".format(output_dir, subject), shell=True)
+
+            src_folder = op.join('HCP_1200', subject, 'MNINonLinear',
+                                 'Results')
 
             for scan in scan_run:
-                subprocess.check_output("aws s3 cp \
-               s3: //hcp-openaccess-temp/HCP_1200/{}/MNINonLinear/Results/{}/{}_Atlas_MSMAll.dtseries.nii{}{} /".format(subject, scan, scan, output_dir, subject), shell=True)
+                src_file = op.join(src_folder, '{}'.format(scan),
+                                   '{}_Atlas_MSMAll.dtseries.nii'.format(scan))
+                dst_file = op.join(subj_func,
+                                   'sub-{}_task-{}_run-01_bold.nii.gz'.format(subject, scan))
+                try:
+                    bucket.download_file(src_file, dst_file)
+                except botocore.exceptions.ClientError as e:
+                    if e.response['Error']['Code'] == "404":
+                        print("{} does not exist.".format(src_file))
+                    else:
+                        raise
+
+    dataset_description = {
+        "BIDSVersion": "1.0.0",
+        "Name": "HCP",
+        "Acknowledgements": """Data were provided by the Human Connectome Project WU-Minn Consortium (Principal Investigators: David Van Essen and Kamil Ugurbil 1U54MH091657) funded by the 16 NIH Institutes and Centers that support the NIH Blueprint for Neuroscience Research; and by the McDonnell Center for Systems Neuroscience at Washington University.""",
+        "Subjects": subject_list}
+
+    with open(op.join(root_dir, 'dataset_description.json'), 'w') as outfile:
+        json.dump(dataset_description, outfile)
 
 
 def train_test_split(root: str,
