@@ -3,3 +3,4 @@ awscli
 boto3
 numpy
 nibabel
+scikit-learn
