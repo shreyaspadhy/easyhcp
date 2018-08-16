@@ -24,8 +24,8 @@ env:
     # Doctr deploy key for shreyaspadhy/easyhcp
     - secure: "FhlAYrTTptLQB4Wp7eWEeCYrqNaX62JvWbIdMdfZmSFGG11kL951Cv6HFd5GCRoCXoQcqSwp43jzj8WipRc2dBGliY/nFOP2KzlSa5IL+IuvfcF+njd6E/8q1ghj1s2CX9IEzkuqXD75Z8YKqwA4skPvgWGJnnFavqJtrqIumYb+mSDHYc/U3Uy+yuLP3P9ay8fyxodEY+eY8o3Fxm1Z0r+J6dlgDc66MOM3gXrepXGncg6HfZvU1vGeq9knNkWlC3j/qx4HIbcibTx7IadRPOOl31XmhgdjnvBXuoXkItq0XaExFXra/0QbHrZ0dYN2bXNK1vYhMILcgGnrmnhBbmz4sZbl005M7JM9/Vb9siL9AaXlV+vIQ4r/AM1oRe6rpg5M9vqI2mIL+ugsbS0JRSyNqL7Md9kH2yxOxrn7HPeC6rAuC8jsrWq2XN1L0GD/GIiVcfNFTvdJdR9nQdaI+x4W8sFPm+cOiNRfQHpggaItslCXPNVIT3wNlxFsNeTv6Bs4KVlYznBrHXiYnTMxkUewHVqypRojBjzNxivLZe/iXETTqac8o+TAu2C1XQ6aVzSJkAT9/+SzvX7IgRFa0WFCmsfFadR64IrYJPLQI02fvoP23zBhC7VA00ALn+LA8MYqGpi7bkUi6/UB9LYSMLVCUSPwWm7+1IsLibd+zTM="
 
-  script:
-    - set -e
-    - make -C docs html
-    - pip install doctr
-    - doctr deploy --built-docs docs/build/html .
+script:
+  - set -e
+  - make -C docs html
+  - pip install doctr
+  - doctr deploy --built-docs docs/build/html .
