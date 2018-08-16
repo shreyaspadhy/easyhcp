@@ -15,12 +15,14 @@ import nibabel as nib
 def setup_credentials():
     """
     Set Up AWS credentials from access keys into a credentials file
+
     Inputs
     ----------
     access_key : str
         AWS_ACCESS_KEY_ID=XXXXXXXXXXXXXXXX
     secret_access_key : str
         AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXX
+
     Notes
     ------
     This function will open/create a file '~/.aws/credentials', that
@@ -167,6 +169,7 @@ def get_resting_data(subject_list,
     """
     Gets resting data for runs for a list of subjects, and stores
     them in BIDS-like format in the specified output directory
+
     Parameters
     ----------
     subject_list : list
@@ -179,6 +182,7 @@ def get_resting_data(subject_list,
         Gets data registered in MNI Space
     out_dir : str
         Path to output directory
+
     Notes
     -----
     Local filenames are changed to match our expected conventions.
