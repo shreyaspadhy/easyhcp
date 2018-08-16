@@ -6,10 +6,10 @@ import botocore
 import os
 import os.path as op
 import json
-import subprocess
 import sklearn as sk
 import numpy as np
-from typing import Tuple
+import glob
+import nibabel as nib
 
 
 def setup_credentials():
@@ -54,9 +54,11 @@ def setup_credentials():
 def explain_HCP():
     """
     Lists all the files in a folder for a subject and explains what they are.
+
     Returns
     -------
     A dictionary with a filename and function
+
     Notes
     -----
     This function prints out a directory structure tree for an HCP subject
@@ -67,15 +69,18 @@ def explain_HCP():
 def get_subjects(get_all=True, get_random=1):
     """
     Fetch a list of HCP subjects
+
     Parameters
     ----------
     get_all : bool
        Gets a list of all the subjects
     get_random : int
         Gets a random subset of subjects
+
     Returns
     -------
     A list of UIDs for subjects in HCP
+
     Notes
     -----
     ...
@@ -88,6 +93,7 @@ def get_structural_data(subject_list, scan_type, preprocessed=True,
     """
     Gets structural data for a list of subjects, and stores
     them in BIDS-like format in the specified output directory
+
     Parameters
     ----------
     subject_list : list
@@ -100,6 +106,7 @@ def get_structural_data(subject_list, scan_type, preprocessed=True,
         Gets data registered in MNI Space
     out_dir : str
         Path to output directory
+
     Notes
     -----
     Local filenames are changed to match our expected conventions.
@@ -226,9 +233,10 @@ def train_test_split(root: str,
                      scan_type: list,
                      convert_to_npy: bool=False) -> None:
     """
-    splits an hcp dataset into train, test, val and converts the .nii.gz 
+    splits an hcp dataset into train, test, val and converts the .nii.gz
     files to .npy for easier processing checks shape to ensure t1 and t2
     are same dim
+
     Parameters
     ----------
     root: str
@@ -237,17 +245,15 @@ def train_test_split(root: str,
         What fraction to divide data in for train, test, val
     scan_type: list
         What scans to divive into train - test splits
-    Notes
-    -----
     """
     os.chdir(root)
     subject_list = glob.glob('*')
     shuffled_list = sk.utils.shuffle(subject_list, random_state=42)
     n_subjects = len(shuffled_list)
     train_list = subject_list[0:np.floor(n_subjects) * split_folds[0]]
-    train_list = subject_list[np.floor(
+    test_list = subject_list[np.floor(
         n_subjects) * split_folds[0]:np.floor(n_subjects) * split_folds[1]]
-    train_list = subject_list[np.floor(
+    val_list = subject_list[np.floor(
         n_subjects) * split_folds[1]:np.floor(n_subjects) * split_folds[2]]
     data_splits = [train_list, test_list, val_list]
     split_names = ['train', 'test', 'val']
@@ -260,9 +266,9 @@ def train_test_split(root: str,
                           split + '/' + subject + name)
                 if convert_to_npy:
                     t1_np = np.array(
-                        nib.load(root + subject + '/' + t1_name).dataobj)
+                        nib.load(root + subject + '/').dataobj)
                     t2_np = np.array(
-                        nib.load(root + subject + '/' + t2_name).dataobj)
+                        nib.load(root + subject + '/').dataobj)
                     t1_np = t1_np[2:-2, 27:-28, 40:-45]
                     t2_np = t2_np[2:-2, 27:-28, 40:-45]
                     for i in range(t1_np.shape[2]):
