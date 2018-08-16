@@ -1,0 +1,564 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>easyhcp.hcpscraper &mdash; EasyHCP 0.post33+g5bbc288 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css" type="text/css" />
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> EasyHCP
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.post33+g5bbc288
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release-history.html">Release History</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">EasyHCP</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>easyhcp.hcpscraper</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for easyhcp.hcpscraper</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="kn">import</span> <span class="nn">boto3</span>
+<span class="kn">import</span> <span class="nn">botocore</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">os.path</span> <span class="k">as</span> <span class="nn">op</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">sklearn</span> <span class="k">as</span> <span class="nn">sk</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">nibabel</span> <span class="k">as</span> <span class="nn">nib</span>
+
+
+<div class="viewcode-block" id="setup_credentials"><a class="viewcode-back" href="../../usage.html#easyhcp.hcpscraper.setup_credentials">[docs]</a><span class="k">def</span> <span class="nf">setup_credentials</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set Up AWS credentials from access keys into a credentials file</span>
+
+<span class="sd">    Inputs</span>
+<span class="sd">    ----------</span>
+<span class="sd">    access_key : str</span>
+<span class="sd">        AWS_ACCESS_KEY_ID=XXXXXXXXXXXXXXXX</span>
+<span class="sd">    secret_access_key : str</span>
+<span class="sd">        AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXX</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    ------</span>
+<span class="sd">    This function will open/create a file &#39;~/.aws/credentials&#39;, that</span>
+<span class="sd">    will then include a section:</span>
+<span class="sd">    [hcp]</span>
+<span class="sd">    AWS_ACCESS_KEY_ID=XXXXXXXXXXXXXXXX</span>
+<span class="sd">    AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXX</span>
+<span class="sd">    The keys are credentials that you can get from HCP</span>
+<span class="sd">    (see https://wiki.humanconnectome.org/display/PublicData/How+To+Connect+to+Connectome+Data+via+AWS)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">access_key</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s1">&#39;Enter your HCP ACCESS KEY ID : &#39;</span><span class="p">)</span>
+    <span class="n">secret_access_key</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s1">&#39;Enter your HCP SECRET ACCESS KEY : &#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s1">&#39;~&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;/.aws&#39;</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s1">&#39;~&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;/.aws&#39;</span><span class="p">)</span>
+
+    <span class="n">cred_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s1">&#39;~&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;/.aws/credentials&#39;</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s1">&#39;[hcp]&#39;</span> <span class="ow">in</span> <span class="n">cred_file</span><span class="o">.</span><span class="n">read</span><span class="p">():</span>
+        <span class="n">update</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span>
+            <span class="s2">&quot;You have &#39;hcp&#39; credentials set up already! Do you wish to update? [y/n] </span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">update</span> <span class="o">==</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span>
+            <span class="k">pass</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">line1</span> <span class="o">=</span> <span class="s1">&#39;[hcp]&#39;</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">line2</span> <span class="o">=</span> <span class="s1">&#39;aws_access_key_id = &#39;</span> <span class="o">+</span> <span class="n">access_key</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">line3</span> <span class="o">=</span> <span class="s1">&#39;aws_secret_access_key = &#39;</span> <span class="o">+</span> <span class="n">secret_access_key</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">cred_file</span><span class="o">.</span><span class="n">writelines</span><span class="p">([</span><span class="n">line1</span><span class="p">,</span> <span class="n">line2</span><span class="p">,</span> <span class="n">line3</span><span class="p">])</span></div>
+
+
+<span class="k">def</span> <span class="nf">explain_HCP</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Lists all the files in a folder for a subject and explains what they are.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A dictionary with a filename and function</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This function prints out a directory structure tree for an HCP subject</span>
+<span class="sd">    with a simple description of what each file is.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+<span class="k">def</span> <span class="nf">get_subjects</span><span class="p">(</span><span class="n">get_all</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">get_random</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fetch a list of HCP subjects</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    get_all : bool</span>
+<span class="sd">       Gets a list of all the subjects</span>
+<span class="sd">    get_random : int</span>
+<span class="sd">        Gets a random subset of subjects</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A list of UIDs for subjects in HCP</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    ...</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+
+
+<div class="viewcode-block" id="get_structural_data"><a class="viewcode-back" href="../../usage.html#easyhcp.hcpscraper.get_structural_data">[docs]</a><span class="k">def</span> <span class="nf">get_structural_data</span><span class="p">(</span><span class="n">subject_list</span><span class="p">,</span> <span class="n">scan_type</span><span class="p">,</span> <span class="n">preprocessed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">MNISpace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Gets structural data for a list of subjects, and stores</span>
+<span class="sd">    them in BIDS-like format in the specified output directory</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    subject_list : list</span>
+<span class="sd">        List of subjects to get data for</span>
+<span class="sd">    scan_type: list</span>
+<span class="sd">        List of types of structural scans to get</span>
+<span class="sd">    preprocessed : bool</span>
+<span class="sd">        Gets preprocessed data</span>
+<span class="sd">    MNISpace : bool</span>
+<span class="sd">        Gets data registered in MNI Space</span>
+<span class="sd">    out_dir : str</span>
+<span class="sd">        Path to output directory</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Local filenames are changed to match our expected conventions.</span>
+<span class="sd">    .. [1] Gorgolewski et al. (2016). The brain imaging data structure, a</span>
+<span class="sd">    format for organizing and describing outputs of neuroimaging experiments.</span>
+<span class="sd">    Scientific Data, 3:: 160044. DOI: 10.1038/sdata.2016.44.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">s3</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">resource</span><span class="p">(</span><span class="s1">&#39;s3&#39;</span><span class="p">)</span>
+    <span class="n">boto3</span><span class="o">.</span><span class="n">setup_default_session</span><span class="p">(</span><span class="n">profile_name</span><span class="o">=</span><span class="s1">&#39;hcp&#39;</span><span class="p">)</span>
+    <span class="n">bucket</span> <span class="o">=</span> <span class="n">s3</span><span class="o">.</span><span class="n">Bucket</span><span class="p">(</span><span class="s1">&#39;hcp-openaccess-temp&#39;</span><span class="p">)</span>
+
+    <span class="n">root_dir</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s1">&#39;hcp&#39;</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">root_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">preprocessed</span> <span class="ow">and</span> <span class="n">MNISpace</span><span class="p">:</span>
+
+        <span class="k">for</span> <span class="n">subject</span> <span class="ow">in</span> <span class="n">subject_list</span><span class="p">:</span>
+            <span class="n">subj_anat</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root_dir</span><span class="p">,</span> <span class="s1">&#39;sub-</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">subject</span><span class="p">),</span> <span class="s1">&#39;anat&#39;</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">subj_anat</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="c1"># subprocess.check_output(</span>
+            <span class="c1">#     &quot;mkdir -p {}{}/&quot;.format(output_dir, subject), shell=True)</span>
+
+            <span class="n">src_folder</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;HCP_1200&#39;</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="s1">&#39;MNINonLinear&#39;</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">scan</span> <span class="ow">in</span> <span class="n">scan_type</span><span class="p">:</span>
+                <span class="n">src_file</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">src_folder</span><span class="p">,</span>
+                                   <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">_restore_brain.nii.gz&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">scan</span><span class="p">))</span>
+                <span class="n">dst_file</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">subj_anat</span><span class="p">,</span>
+                                   <span class="s1">&#39;sub-</span><span class="si">{}</span><span class="s1">_</span><span class="si">{}</span><span class="s1">.nii.gz&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">subject</span><span class="p">,</span> <span class="n">scan</span><span class="p">))</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">bucket</span><span class="o">.</span><span class="n">download_file</span><span class="p">(</span><span class="n">src_file</span><span class="p">,</span> <span class="n">dst_file</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">botocore</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">ClientError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="p">[</span><span class="s1">&#39;Error&#39;</span><span class="p">][</span><span class="s1">&#39;Code&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;404&quot;</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> does not exist.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">src_file</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span>
+
+    <span class="n">dataset_description</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;BIDSVersion&quot;</span><span class="p">:</span> <span class="s2">&quot;1.0.0&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="s2">&quot;HCP&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Acknowledgements&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;&quot;Data were provided by the Human Connectome Project, </span>
+<span class="s2">        WU-Minn Consortium (Principal Investigators: David Van Essen and Kamil</span>
+<span class="s2">        Ugurbil; 1U54MH091657) funded by the 16 NIH Institutes and Centers that</span>
+<span class="s2">        support the NIH Blueprint for Neuroscience Research; and by the McDonnell</span>
+<span class="s2">        Center for Systems Neuroscience at Washington University.&quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Subjects&quot;</span><span class="p">:</span> <span class="n">subject_list</span><span class="p">}</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root_dir</span><span class="p">,</span> <span class="s1">&#39;dataset_description.json&#39;</span><span class="p">),</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">dataset_description</span><span class="p">,</span> <span class="n">outfile</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_resting_data"><a class="viewcode-back" href="../../usage.html#easyhcp.hcpscraper.get_resting_data">[docs]</a><span class="k">def</span> <span class="nf">get_resting_data</span><span class="p">(</span><span class="n">subject_list</span><span class="p">,</span>
+                     <span class="n">scan_run</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;rfMRI_REST1_LR&quot;</span><span class="p">,</span> <span class="s2">&quot;rfMRI_REST2_LR&quot;</span><span class="p">,</span>
+                               <span class="s2">&quot;rfMRI_REST1_RL&quot;</span><span class="p">,</span> <span class="s2">&quot;rfMRI_REST2_RL&quot;</span><span class="p">],</span>
+                     <span class="n">preprocessed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                     <span class="n">MNISpace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Gets resting data for runs for a list of subjects, and stores</span>
+<span class="sd">    them in BIDS-like format in the specified output directory</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    subject_list : list</span>
+<span class="sd">        List of subjects to get data for</span>
+<span class="sd">    scan_run: list</span>
+<span class="sd">        List of types of structural scans to get</span>
+<span class="sd">    preprocessed : bool</span>
+<span class="sd">        Gets preprocessed data</span>
+<span class="sd">    MNISpace : bool</span>
+<span class="sd">        Gets data registered in MNI Space</span>
+<span class="sd">    out_dir : str</span>
+<span class="sd">        Path to output directory</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Local filenames are changed to match our expected conventions.</span>
+<span class="sd">    .. [1] Gorgolewski et al. (2016). The brain imaging data structure, a</span>
+<span class="sd">    format for organizing and describing outputs of neuroimaging experiments.</span>
+<span class="sd">    Scientific Data, 3:: 160044. DOI: 10.1038/sdata.2016.44.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">s3</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">resource</span><span class="p">(</span><span class="s1">&#39;s3&#39;</span><span class="p">)</span>
+    <span class="n">boto3</span><span class="o">.</span><span class="n">setup_default_session</span><span class="p">(</span><span class="n">profile_name</span><span class="o">=</span><span class="s1">&#39;hcp&#39;</span><span class="p">)</span>
+    <span class="n">bucket</span> <span class="o">=</span> <span class="n">s3</span><span class="o">.</span><span class="n">Bucket</span><span class="p">(</span><span class="s1">&#39;hcp-openaccess-temp&#39;</span><span class="p">)</span>
+
+    <span class="n">root_dir</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s1">&#39;hcp&#39;</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">root_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">preprocessed</span> <span class="ow">and</span> <span class="n">MNISpace</span><span class="p">:</span>
+
+        <span class="k">for</span> <span class="n">subject</span> <span class="ow">in</span> <span class="n">subject_list</span><span class="p">:</span>
+            <span class="n">subj_func</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root_dir</span><span class="p">,</span> <span class="s1">&#39;sub-</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">subject</span><span class="p">),</span> <span class="s1">&#39;func&#39;</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">subj_func</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="c1"># subprocess.check_output(</span>
+            <span class="c1">#     &quot;mkdir -p {}{}/&quot;.format(output_dir, subject), shell=True)</span>
+
+            <span class="n">src_folder</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;HCP_1200&#39;</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="s1">&#39;MNINonLinear&#39;</span><span class="p">,</span>
+                                 <span class="s1">&#39;Results&#39;</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">scan</span> <span class="ow">in</span> <span class="n">scan_run</span><span class="p">:</span>
+                <span class="n">src_file</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">src_folder</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">scan</span><span class="p">),</span>
+                                   <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">_Atlas_MSMAll.dtseries.nii&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">scan</span><span class="p">))</span>
+                <span class="n">dst_file</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">subj_func</span><span class="p">,</span>
+                                   <span class="s1">&#39;sub-</span><span class="si">{}</span><span class="s1">_task-</span><span class="si">{}</span><span class="s1">_run-01_bold.nii.gz&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">subject</span><span class="p">,</span> <span class="n">scan</span><span class="p">))</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">bucket</span><span class="o">.</span><span class="n">download_file</span><span class="p">(</span><span class="n">src_file</span><span class="p">,</span> <span class="n">dst_file</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">botocore</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">ClientError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="p">[</span><span class="s1">&#39;Error&#39;</span><span class="p">][</span><span class="s1">&#39;Code&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;404&quot;</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> does not exist.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">src_file</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span>
+
+    <span class="n">dataset_description</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;BIDSVersion&quot;</span><span class="p">:</span> <span class="s2">&quot;1.0.0&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="s2">&quot;HCP&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Acknowledgements&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;&quot;Data were provided by the Human Connectome Project WU-Minn Consortium (Principal Investigators: David Van Essen and Kamil Ugurbil 1U54MH091657) funded by the 16 NIH Institutes and Centers that support the NIH Blueprint for Neuroscience Research; and by the McDonnell Center for Systems Neuroscience at Washington University.&quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Subjects&quot;</span><span class="p">:</span> <span class="n">subject_list</span><span class="p">}</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root_dir</span><span class="p">,</span> <span class="s1">&#39;dataset_description.json&#39;</span><span class="p">),</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">dataset_description</span><span class="p">,</span> <span class="n">outfile</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="train_test_split"><a class="viewcode-back" href="../../usage.html#easyhcp.hcpscraper.train_test_split">[docs]</a><span class="k">def</span> <span class="nf">train_test_split</span><span class="p">(</span><span class="n">root</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                     <span class="n">split_folds</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">([</span><span class="o">.</span><span class="mi">7</span><span class="p">,</span> <span class="o">.</span><span class="mi">2</span><span class="p">,</span> <span class="o">.</span><span class="mi">1</span><span class="p">]),</span>
+                     <span class="n">scan_type</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+                     <span class="n">convert_to_npy</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    splits an hcp dataset into train, test, val and converts the .nii.gz</span>
+<span class="sd">    files to .npy for easier processing checks shape to ensure t1 and t2</span>
+<span class="sd">    are same dim</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    root: str</span>
+<span class="sd">        root directory where raw files are stored</span>
+<span class="sd">    split_folds: tuple(float, float, float)</span>
+<span class="sd">        What fraction to divide data in for train, test, val</span>
+<span class="sd">    scan_type: list</span>
+<span class="sd">        What scans to divive into train - test splits</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+    <span class="n">subject_list</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">)</span>
+    <span class="n">shuffled_list</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">subject_list</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+    <span class="n">n_subjects</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">shuffled_list</span><span class="p">)</span>
+    <span class="n">train_list</span> <span class="o">=</span> <span class="n">subject_list</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">n_subjects</span><span class="p">)</span> <span class="o">*</span> <span class="n">split_folds</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="n">test_list</span> <span class="o">=</span> <span class="n">subject_list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span>
+        <span class="n">n_subjects</span><span class="p">)</span> <span class="o">*</span> <span class="n">split_folds</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">n_subjects</span><span class="p">)</span> <span class="o">*</span> <span class="n">split_folds</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="n">val_list</span> <span class="o">=</span> <span class="n">subject_list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span>
+        <span class="n">n_subjects</span><span class="p">)</span> <span class="o">*</span> <span class="n">split_folds</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">n_subjects</span><span class="p">)</span> <span class="o">*</span> <span class="n">split_folds</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+    <span class="n">data_splits</span> <span class="o">=</span> <span class="p">[</span><span class="n">train_list</span><span class="p">,</span> <span class="n">test_list</span><span class="p">,</span> <span class="n">val_list</span><span class="p">]</span>
+    <span class="n">split_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">,</span> <span class="s1">&#39;test&#39;</span><span class="p">,</span> <span class="s1">&#39;val&#39;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">num</span><span class="p">,</span> <span class="n">split</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">split_names</span><span class="p">):</span>
+        <span class="n">train_list</span> <span class="o">=</span> <span class="n">data_splits</span><span class="p">[</span><span class="n">num</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">subject</span> <span class="ow">in</span> <span class="n">train_list</span><span class="p">:</span>
+            <span class="k">for</span> <span class="nb">type</span> <span class="ow">in</span> <span class="n">scan_type</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;/</span><span class="si">{}</span><span class="s1">_restore_brain.nii.gz&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">)</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">root</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">root</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span>
+                          <span class="n">split</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">subject</span> <span class="o">+</span> <span class="n">name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">convert_to_npy</span><span class="p">:</span>
+                    <span class="n">t1_np</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                        <span class="n">nib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">root</span> <span class="o">+</span> <span class="n">subject</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">dataobj</span><span class="p">)</span>
+                    <span class="n">t2_np</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                        <span class="n">nib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">root</span> <span class="o">+</span> <span class="n">subject</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">dataobj</span><span class="p">)</span>
+                    <span class="n">t1_np</span> <span class="o">=</span> <span class="n">t1_np</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">27</span><span class="p">:</span><span class="o">-</span><span class="mi">28</span><span class="p">,</span> <span class="mi">40</span><span class="p">:</span><span class="o">-</span><span class="mi">45</span><span class="p">]</span>
+                    <span class="n">t2_np</span> <span class="o">=</span> <span class="n">t2_np</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">27</span><span class="p">:</span><span class="o">-</span><span class="mi">28</span><span class="p">,</span> <span class="mi">40</span><span class="p">:</span><span class="o">-</span><span class="mi">45</span><span class="p">]</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">t1_np</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]):</span>
+                        <span class="k">assert</span><span class="p">(</span><span class="n">t1_np</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">t2_np</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">fetch_hcp_diffusion</span><span class="p">(</span><span class="n">subjects</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fetch HCP diffusion data and arrange it in a manner that resembles the</span>
+<span class="sd">    BIDS[1]_ specification.</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    subjects: list</span>
+<span class="sd">       Each item is an integer, identifying one of the HCP subjects</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict with remote and local names of these files.</span>
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    To use this function, please setup credentials either manually,</span>
+<span class="sd">    or by running `setup_credentials()`</span>
+<span class="sd">    Local filenames are changed to match our expected conventions.</span>
+<span class="sd">    .. [1] Gorgolewski et al. (2016). The brain imaging data structure,</span>
+<span class="sd">           a format for organizing and describing outputs of neuroimaging</span>
+<span class="sd">           experiments. Scientific Data, 3:: 160044. DOI: 10.1038/sdata.2016.44.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">boto3</span><span class="o">.</span><span class="n">setup_default_session</span><span class="p">(</span><span class="n">profile_name</span><span class="o">=</span><span class="s1">&#39;hcp&#39;</span><span class="p">)</span>
+    <span class="n">s3</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">resource</span><span class="p">(</span><span class="s1">&#39;s3&#39;</span><span class="p">)</span>
+    <span class="n">bucket</span> <span class="o">=</span> <span class="n">s3</span><span class="o">.</span><span class="n">Bucket</span><span class="p">(</span><span class="s1">&#39;hcp-openaccess-temp&#39;</span><span class="p">)</span>
+    <span class="n">base_dir</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;hcp&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">base_dir</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">base_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">data_files</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">subject</span> <span class="ow">in</span> <span class="n">subjects</span><span class="p">:</span>
+        <span class="c1"># We make a single session folder per subject for this case, because</span>
+        <span class="c1"># AFQ api expects session structure:</span>
+        <span class="n">sub_dir</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base_dir</span><span class="p">,</span> <span class="s1">&#39;sub-</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">subject</span><span class="p">)</span>
+        <span class="n">sess_dir</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sub_dir</span><span class="p">,</span> <span class="s2">&quot;sess-01&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">sub_dir</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">sub_dir</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">sess_dir</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sess_dir</span><span class="p">,</span> <span class="s1">&#39;dwi&#39;</span><span class="p">))</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sess_dir</span><span class="p">,</span> <span class="s1">&#39;anat&#39;</span><span class="p">))</span>
+        <span class="n">data_files</span><span class="p">[</span><span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sess_dir</span><span class="p">,</span> <span class="s1">&#39;dwi&#39;</span><span class="p">,</span> <span class="s1">&#39;sub-</span><span class="si">%s</span><span class="s1">_dwi.bval&#39;</span> <span class="o">%</span> <span class="n">subject</span><span class="p">)]</span> <span class="o">=</span>\
+            <span class="s1">&#39;HCP/</span><span class="si">%s</span><span class="s1">/T1w/Diffusion/bvals&#39;</span> <span class="o">%</span> <span class="n">subject</span>
+        <span class="n">data_files</span><span class="p">[</span><span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sess_dir</span><span class="p">,</span> <span class="s1">&#39;dwi&#39;</span><span class="p">,</span> <span class="s1">&#39;sub-</span><span class="si">%s</span><span class="s1">_dwi.bvec&#39;</span> <span class="o">%</span> <span class="n">subject</span><span class="p">)]</span> <span class="o">=</span>\
+            <span class="s1">&#39;HCP/</span><span class="si">%s</span><span class="s1">/T1w/Diffusion/bvecs&#39;</span> <span class="o">%</span> <span class="n">subject</span>
+        <span class="n">data_files</span><span class="p">[</span><span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sess_dir</span><span class="p">,</span> <span class="s1">&#39;dwi&#39;</span><span class="p">,</span> <span class="s1">&#39;sub-</span><span class="si">%s</span><span class="s1">_dwi.nii.gz&#39;</span> <span class="o">%</span> <span class="n">subject</span><span class="p">)]</span> <span class="o">=</span>\
+            <span class="s1">&#39;HCP/</span><span class="si">%s</span><span class="s1">/T1w/Diffusion/data.nii.gz&#39;</span> <span class="o">%</span> <span class="n">subject</span>
+        <span class="n">data_files</span><span class="p">[</span><span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sess_dir</span><span class="p">,</span> <span class="s1">&#39;anat&#39;</span><span class="p">,</span> <span class="s1">&#39;sub-</span><span class="si">%s</span><span class="s1">_T1w.nii.gz&#39;</span> <span class="o">%</span> <span class="n">subject</span><span class="p">)]</span> <span class="o">=</span>\
+            <span class="s1">&#39;HCP/</span><span class="si">%s</span><span class="s1">/T1w/T1w_acpc_dc.nii.gz&#39;</span> <span class="o">%</span> <span class="n">subject</span>
+        <span class="n">data_files</span><span class="p">[</span><span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sess_dir</span><span class="p">,</span> <span class="s1">&#39;anat&#39;</span><span class="p">,</span>
+                           <span class="s1">&#39;sub-</span><span class="si">%s</span><span class="s1">_aparc+aseg.nii.gz&#39;</span> <span class="o">%</span> <span class="n">subject</span><span class="p">)]</span> <span class="o">=</span>\
+            <span class="s1">&#39;HCP/</span><span class="si">%s</span><span class="s1">/T1w/aparc+aseg.nii.gz&#39;</span> <span class="o">%</span> <span class="n">subject</span>
+
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">data_files</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">op</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
+            <span class="n">bucket</span><span class="o">.</span><span class="n">download_file</span><span class="p">(</span><span class="n">data_files</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">k</span><span class="p">)</span>
+    <span class="c1"># Create the BIDS dataset description file text</span>
+    <span class="n">dataset_description</span> <span class="o">=</span> <span class="p">{</span>
+         <span class="s2">&quot;BIDSVersion&quot;</span><span class="p">:</span> <span class="s2">&quot;1.0.0&quot;</span><span class="p">,</span>
+         <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="s2">&quot;HCP&quot;</span><span class="p">,</span>
+         <span class="s2">&quot;Acknowledgements&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;&quot;Data were provided by the Human Connectome </span>
+<span class="s2">         Project, WU-Minn Consortium (Principal Investigators: David Van </span>
+<span class="s2">        Essen and Kamil Ugurbil; 1U54MH091657) funded by the 16 NIH Institutes</span>
+<span class="s2">        and Centers that support the NIH Blueprint for Neuroscience Research;</span>
+<span class="s2">       and by the McDonnell Center for Systems Neuroscience at Washington University.&quot;&quot;&quot;</span><span class="p">,</span>  <span class="c1"># noqa</span>
+         <span class="s2">&quot;Subjects&quot;</span><span class="p">:</span> <span class="n">subjects</span><span class="p">}</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base_dir</span><span class="p">,</span> <span class="s1">&#39;dataset_description.json&#39;</span><span class="p">),</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">dataset_description</span><span class="p">,</span> <span class="n">outfile</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">data_files</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Shreyas Padhy.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'0.post33+g5bbc288',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="../../_static/copybutton.js"></script>
+      <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@1/dist/clipboard.min.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+      <script type="text/javascript" src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
